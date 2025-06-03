@@ -1,13 +1,11 @@
 import React from 'react';
 import './App.css';
+import SalaryTable from './components/SalaryTable/SalaryTable';
 
 function App() {
     return (
         <div className="App">
-            <header className="App-header">
-                <h1>Welcome to Brutten Nete</h1>
-                <p>Your new React application is ready!</p>
-            </header>
+            <SalaryTable />
         </div>
     );
 }
