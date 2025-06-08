@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/brutten-nete/static/css/main.9b5a8a7a.css",
+    "main.js": "/brutten-nete/static/js/main.2e011577.js",
+    "static/js/453.729e0890.chunk.js": "/brutten-nete/static/js/453.729e0890.chunk.js",
+    "index.html": "/brutten-nete/index.html",
+    "main.9b5a8a7a.css.map": "/brutten-nete/static/css/main.9b5a8a7a.css.map",
+    "main.2e011577.js.map": "/brutten-nete/static/js/main.2e011577.js.map",
+    "453.729e0890.chunk.js.map": "/brutten-nete/static/js/453.729e0890.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.9b5a8a7a.css",
+    "static/js/main.2e011577.js"
+  ]
+}
