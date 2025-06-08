@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import './SalaryTable.css';
 import { calculateSalary } from '../../utils/calculateSalary';
+import HamburgerMenu from '../HamburgerMenu/HamburgerMenu';
+import FutureYearForm from '../FutureYearForm/FutureYearForm';
+import * as XLSX from 'xlsx';
 
 const months = [
     'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -12,6 +15,11 @@ const DEFAULT_ASGARI_UCRET = 26005.5;
 
 const SalaryTable = () => {
     const [grossSalaries, setGrossSalaries] = useState(Array(12).fill(''));
+    const [showFutureYearForm, setShowFutureYearForm] = useState(false);
+    const [currentYear, setCurrentYear] = useState(DEFAULT_YEAR);
+    const [savedYears, setSavedYears] = useState({}); // Birden fazla yılı sakla
+    const [editMode, setEditMode] = useState(false);
+    const [editingYear, setEditingYear] = useState(null); // Hangi yılı düzenliyoruz
 
     const handleGrossChange = (idx, value) => {
         const newSalaries = [...grossSalaries];
@@ -21,11 +29,62 @@ const SalaryTable = () => {
         setGrossSalaries(newSalaries);
     };
 
+    const handleFutureYearSubmit = ({ year, taxRates, exemptions, inflation }) => {
+        // Yeni yılı kaydet
+        setSavedYears(prev => ({
+            ...prev,
+            [year]: { taxRates, exemptions, inflation }
+        }));
+        setCurrentYear(year);
+        setShowFutureYearForm(false);
+        setEditMode(false);
+        setEditingYear(null);
+    };
+
+    const resetToDefault = () => {
+        setCurrentYear(DEFAULT_YEAR);
+        setSavedYears({});
+        setEditMode(false);
+        setEditingYear(null);
+    };
+
+    const handleEditRates = (year) => {
+        setEditingYear(year);
+        setEditMode(true);
+        setShowFutureYearForm(true);
+    };
+
+    const handleNewYear = () => {
+        setEditMode(false);
+        setEditingYear(null);
+        setShowFutureYearForm(true);
+    };
+
+    const switchToYear = (year) => {
+        setCurrentYear(year);
+    };
+
+    // Mevcut yılın verilerini al
+    const getCurrentYearData = () => {
+        if (currentYear === DEFAULT_YEAR) {
+            return { customRates: null, customExemptions: null };
+        }
+        const yearData = savedYears[currentYear];
+        return {
+            customRates: yearData?.taxRates || null,
+            customExemptions: yearData?.exemptions || null
+        };
+    };
+
+    const { customRates, customExemptions } = getCurrentYearData();
+
     // Hesaplamaları al
     const results = calculateSalary({
-        year: DEFAULT_YEAR,
+        year: currentYear,
         grossSalaries,
-        asgariUcret: DEFAULT_ASGARI_UCRET
+        asgariUcret: DEFAULT_ASGARI_UCRET,
+        customRates,
+        customExemptions
     });
 
     // Toplam ve ortalama hesapla
@@ -35,12 +94,225 @@ const SalaryTable = () => {
     // Yüzde oranları (brüt ve nete göre)
     const percent = (val, base) => base ? (val / base * 100).toFixed(1) : '0';
 
+    // Excel export fonksiyonu
+    const exportToExcel = () => {
+        // Excel için veri hazırla
+        const excelData = [];
+
+        // Başlık satırı
+        excelData.push([
+            `${currentYear} YILI MAAŞ HESAPLAMALARI`,
+            '', '', '', '', '', '', ''
+        ]);
+
+        // Boş satır
+        excelData.push(['', '', '', '', '', '', '', '']);
+
+        // Tablo başlıkları
+        excelData.push([
+            'AY',
+            'BRÜT ÜCRET (₺)',
+            'ÇALIŞAN SGK PRİMİ (₺)',
+            'ÇALIŞAN İŞSİZLİK SİGORTASI (₺)',
+            'DAMGA VERGİSİ (₺)',
+            'GELİR VERGİSİ DİLİMİ',
+            'GELİR VERGİSİ (₺)',
+            'NET ÜCRET (₺)'
+        ]);
+
+        // Aylık veriler
+        months.forEach((month, idx) => {
+            const result = results[idx] || {};
+            excelData.push([
+                month,
+                result.A || 0,
+                result.B || 0,
+                result.C || 0,
+                result.F || 0,
+                result.dilim || '-',
+                result.E || 0,
+                result.H || 0
+            ]);
+        });
+
+        // Boş satır
+        excelData.push(['', '', '', '', '', '', '', '']);
+
+        // Toplam satırı
+        excelData.push([
+            'TOPLAM',
+            sum('A'),
+            sum('B'),
+            sum('C'),
+            sum('F'),
+            '-',
+            sum('E'),
+            sum('H')
+        ]);
+
+        // Ortalama satırı
+        excelData.push([
+            'ORTALAMA',
+            avg('A'),
+            avg('B'),
+            avg('C'),
+            avg('F'),
+            '-',
+            avg('E'),
+            avg('H')
+        ]);
+
+        // Boş satır
+        excelData.push(['', '', '', '', '', '', '', '']);
+
+        // Yüzde oranları
+        excelData.push([
+            'BRÜT\'E ORANI (%)',
+            '100',
+            percent(sum('B'), sum('A')),
+            percent(sum('C'), sum('A')),
+            percent(sum('F'), sum('A')),
+            '-',
+            percent(sum('E'), sum('A')),
+            percent(sum('H'), sum('A'))
+        ]);
+
+        excelData.push([
+            'NET\'E ORANI (%)',
+            percent(sum('A'), sum('H')),
+            percent(sum('B'), sum('H')),
+            percent(sum('C'), sum('H')),
+            percent(sum('F'), sum('H')),
+            '-',
+            percent(sum('E'), sum('H')),
+            '100'
+        ]);
+
+        // Workbook oluştur
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+        // Sütun genişlikleri ayarla
+        ws['!cols'] = [
+            { width: 12 }, // Ay
+            { width: 18 }, // Brüt Ücret
+            { width: 20 }, // SGK Primi
+            { width: 25 }, // İşsizlik Sigortası
+            { width: 18 }, // Damga Vergisi
+            { width: 18 }, // Gelir Vergisi Dilimi
+            { width: 18 }, // Gelir Vergisi
+            { width: 18 }  // Net Ücret
+        ];
+
+        // Türk Lirası formatı: #,##0.00" ₺"
+        const currencyFormat = '#,##0.00" ₺"';
+        const percentFormat = '0.0"%"';
+
+        // Sayısal hücrelere format uygula
+        const range = XLSX.utils.decode_range(ws['!ref']);
+
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellRef]) continue;
+
+                // Para birimi sütunları (B, C, D, E, G, H - yani 1,2,3,4,6,7)
+                if ((C >= 1 && C <= 4) || (C >= 6 && C <= 7)) {
+                    // Başlık satırları hariç (R >= 3 ve sayısal değerler)
+                    if (R >= 3 && typeof ws[cellRef].v === 'number') {
+                        if (!ws[cellRef].s) ws[cellRef].s = {};
+                        ws[cellRef].s.numFmt = currencyFormat;
+                    }
+                }
+
+                // Yüzde sütunları (son 2 satır için)
+                if (R >= range.e.r - 1) {
+                    if ((C >= 1 && C <= 4) || (C >= 6 && C <= 7)) {
+                        if (typeof ws[cellRef].v === 'string' && ws[cellRef].v.includes('.')) {
+                            // String yüzde değerlerini sayıya çevir
+                            const numValue = parseFloat(ws[cellRef].v);
+                            if (!isNaN(numValue)) {
+                                ws[cellRef].v = numValue;
+                                ws[cellRef].t = 'n';
+                                if (!ws[cellRef].s) ws[cellRef].s = {};
+                                ws[cellRef].s.numFmt = percentFormat;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Worksheet'i workbook'a ekle
+        XLSX.utils.book_append_sheet(wb, ws, `${currentYear} Maaş Hesabı`);
+
+        // Dosyayı indir
+        const fileName = `${currentYear}_maas_hesaplama_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    };
+
     return (
         <div className="salary-table-wrapper">
+            <HamburgerMenu onFutureYearClick={handleNewYear} />
+
+            {showFutureYearForm && (
+                <FutureYearForm
+                    onSubmit={handleFutureYearSubmit}
+                    onClose={() => {
+                        setShowFutureYearForm(false);
+                        setEditMode(false);
+                    }}
+                    savedYears={savedYears}
+                    initialValues={editMode && editingYear && savedYears[editingYear] ? {
+                        year: editingYear,
+                        taxRates: savedYears[editingYear].taxRates,
+                        exemptions: savedYears[editingYear].exemptions,
+                        inflation: savedYears[editingYear].inflation
+                    } : null}
+                />
+            )}
+
+            <div className="year-info">
+                <h2>{currentYear} Yılı Hesaplaması</h2>
+                <div className="year-buttons">
+                    {/* Yıl seçici dropdown */}
+                    {Object.keys(savedYears).length > 0 && (
+                        <select
+                            className="year-selector"
+                            value={currentYear}
+                            onChange={(e) => switchToYear(parseInt(e.target.value))}
+                        >
+                            <option value={DEFAULT_YEAR}>2025 (Varsayılan)</option>
+                            {Object.keys(savedYears).sort().map(year => (
+                                <option key={year} value={year}>
+                                    {year} (Özel)
+                                </option>
+                            ))}
+                        </select>
+                    )}
+
+                    {/* Export butonu */}
+                    <button className="export-btn" onClick={exportToExcel}>
+                        📊 Excel İndir
+                    </button>
+
+                    {currentYear !== DEFAULT_YEAR && (
+                        <button className="reset-btn" onClick={resetToDefault}>
+                            2025'e Dön
+                        </button>
+                    )}
+                    {customRates && (
+                        <button className="edit-rates-btn" onClick={() => handleEditRates(currentYear)}>
+                            {currentYear} Vergi Oranlarını Düzenle
+                        </button>
+                    )}
+                </div>
+            </div>
+
             <table className="salary-table">
                 <thead>
                     <tr>
-                        <th rowSpan="4" className="blue">2025</th>
+                        <th rowSpan="4" className="blue">{currentYear}</th>
                         <th rowSpan="4">Brüt Ücret ₺</th>
                         <th colSpan="5" className="red">Yasal Kesintiler ₺</th>
                         <th rowSpan="4">Net Ücret ₺</th>
@@ -81,6 +353,7 @@ const SalaryTable = () => {
                             <td>{results[idx]?.H?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                         </tr>
                     ))}
+
                     <tr className="total-row">
                         <td>Toplam</td>
                         <td>{sum('A').toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -101,6 +374,7 @@ const SalaryTable = () => {
                         <td>{avg('E').toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>{avg('H').toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
+
                     <tr className="percent-row">
                         <td>Brüt'e Oranı</td>
                         <td>%100</td>
