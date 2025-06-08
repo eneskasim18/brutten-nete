@@ -24,7 +24,7 @@ const HamburgerMenu = ({ onFutureYearClick }) => {
             {isOpen && (
                 <div className="hamburger-dropdown">
                     <div className="hamburger-item" onClick={handleFutureYearClick}>
-                        Gelecek yıllar için hesaplama
+                        Gelecek Yıllar İçin Hesaplama
                     </div>
                 </div>
             )}
