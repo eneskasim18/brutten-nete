@@ -7,7 +7,7 @@ function getSgkTavan(year, asgariUcret) {
 }
 
 // Yıllara göre devletin açıkladığı aylık gelir ve damga vergisi istisnaları
-const ISTISNA = {
+export const ISTISNA = {
     2023: {
         gelir: [1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00, 1919.00],
         damga: [137.34, 137.34, 137.34, 137.34, 137.34, 137.34, 137.34, 137.34, 137.34, 137.34, 137.34, 137.34]
@@ -23,15 +23,12 @@ const ISTISNA = {
 };
 
 // Asgari ücret istisnası 2022 ve sonrası için geçerli
-export function calculateSalary({ year, grossSalaries, asgariUcret }) {
-    const rates = TaxRates.getRates(year);
+export function calculateSalary({ year, grossSalaries, asgariUcret, customRates = null, customExemptions = null }) {
+    const rates = customRates || TaxRates.getRates(year);
+    const exemptions = customExemptions || ISTISNA[year];
     const results = [];
     let cumulativeMatrah = 0;
     const sgkTavan = getSgkTavan(year, asgariUcret);
-
-    // Asgari ücretin matrahı (her ay için):
-    const asgariMatrahAy = asgariUcret - (asgariUcret * (rates.sgk + rates.issizlik));
-    const toplamAsgariMatrah = asgariMatrahAy * 12;
 
     for (let i = 0; i < grossSalaries.length; i++) {
         const A = parseFloat(grossSalaries[i]?.toString().replace(',', '.')) || 0;
@@ -45,8 +42,7 @@ export function calculateSalary({ year, grossSalaries, asgariUcret }) {
         let gelirVergisiMatrah = D; // İstisna matrahtan değil, vergiden düşülecek
         let I = 0; // Asgari Geçim İndirimi (2022+ yok)
 
-        if (ISTISNA[year]) {
-            // gelirVergisiMatrah = Math.max(0, D - ISTISNA[year].gelir[i]); // Kaldırıldı: yanlış hesaplama
+        if (exemptions) {
             // İstisna vergiden düşülecek, matrahtan değil
         } else if (year >= 2022) {
             // Eski mantık: asgari ücretin matrahı kadar istisna
@@ -78,15 +74,15 @@ export function calculateSalary({ year, grossSalaries, asgariUcret }) {
 
         // Damga vergisi
         let F;
-        if (ISTISNA[year]) {
-            F = Math.max(0, Math.round((A * rates.damga - ISTISNA[year].damga[i]) * 100) / 100);
+        if (exemptions) {
+            F = Math.max(0, Math.round((A * rates.damga - exemptions.damga[i]) * 100) / 100);
         } else {
             F = Math.round(A * rates.damga * 100) / 100;
         }
 
         // İstisnalar hesaplanan vergi tutarından düşülmeli
-        if (ISTISNA[year]) {
-            E = Math.max(0, E - ISTISNA[year].gelir[i]);
+        if (exemptions) {
+            E = Math.max(0, E - exemptions.gelir[i]);
         }
 
         // Net maaş

@@ -5,6 +5,7 @@
     justify-content: center;
     min-height: 100vh;
     background: #f7f7f7;
+    position: relative;
 }
 
 .salary-table {
@@ -114,4 +115,84 @@
     font-size: 11px;
     color: #888;
     font-weight: normal;
+}
+
+.year-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    margin-top: 70px;
+    flex-direction: column;
+}
+
+.year-info h2 {
+    margin: 0;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.year-buttons {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.year-selector {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.year-selector:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.reset-btn,
+.edit-rates-btn,
+.export-btn {
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.reset-btn {
+    background: #ff9800;
+    color: white;
+}
+
+.reset-btn:hover {
+    background: #f57c00;
+}
+
+.edit-rates-btn {
+    background: #1976d2;
+    color: white;
+}
+
+.edit-rates-btn:hover {
+    background: #1565c0;
+}
+
+.export-btn {
+    background: #4caf50;
+    color: white;
+}
+
+.export-btn:hover {
+    background: #45a049;
 }
