@@ -1,6 +1,6 @@
-# Brutten Nete - Türk Maaş Hesaplama Uygulaması
+# Brutten Nete - Maaş Hesaplama Uygulaması
 
-Bu, Create React App ile oluşturulmuş bir Türk maaş hesaplama uygulamasıdır. Uygulama, 2025 ve gelecek yıllar için doğru vergi hesaplamaları, çoklu yıl planlaması ve Excel export özellikleri sunar.
+Bu, Create React App ile oluşturulmuş bir maaş hesaplama uygulamasıdır. Uygulama, 2025 ve gelecek yıllar için doğru vergi hesaplamaları, çoklu yıl planlaması ve Excel export özellikleri sunar.
 
 🌐 **Canlı Site**: [https://eneskasim18.github.io/brutten-nete](https://eneskasim18.github.io/brutten-nete)
 
