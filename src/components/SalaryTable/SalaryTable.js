@@ -22,10 +22,28 @@ const SalaryTable = () => {
     const [editMode, setEditMode] = useState(false);
     const [editingYear, setEditingYear] = useState(null); // Hangi yılı düzenliyoruz
 
+    // Sayı formatla: 10000 -> 10.000
+    const formatNumber = (value) => {
+        if (!value) return '';
+        // Sadece rakam ve virgül kalmasına izin ver
+        let clean = value.replace(/[^0-9,]/g, '');
+
+        // Virgülden sonrasını ayır
+        const parts = clean.split(',');
+        let integerPart = parts[0];
+        const decimalPart = parts.length > 1 ? ',' + parts[1] : '';
+
+        // Binlik basamaklara nokta koy
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+        return integerPart + decimalPart;
+    };
+
     const handleGrossChange = (idx, value) => {
+        const formatted = formatNumber(value);
         const newSalaries = [...grossSalaries];
         for (let i = idx; i < newSalaries.length; i++) {
-            newSalaries[i] = value;
+            newSalaries[i] = formatted;
         }
         setGrossSalaries(newSalaries);
     };
