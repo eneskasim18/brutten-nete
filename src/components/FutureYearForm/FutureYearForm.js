@@ -6,8 +6,8 @@ import { ISTISNA } from '../../utils/calculateSalary';
 const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = {} }) => {
     const lastYear = TaxRates.getLastYear();
 
-    // Eğer initialValues varsa onları kullan, yoksa default değerler (son yıl üzerinden)
-    const [year, setYear] = useState(initialValues?.year || lastYear);
+    // Eğer initialValues varsa onları kullan, yoksa default değerler (son yıl üzerinden + 1)
+    const [year, setYear] = useState(initialValues?.year || (lastYear + 1));
     const [inflation, setInflation] = useState(initialValues?.inflation || '');
     const [baseYear, setBaseYear] = useState(''); // Hangi yılı baz alacağız
 
@@ -19,18 +19,7 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
     const exemptions2025 = ISTISNA[latestYear];
 
     const [taxRates, setTaxRates] = useState(
-        initialValues?.taxRates || {
-            sgk: 0.14,
-            issizlik: 0.01,
-            damga: 0.00759,
-            gelir: [
-                { min: 0, max: 158000, oran: 0.15 },
-                { min: 158000, max: 330000, oran: 0.20 },
-                { min: 330000, max: 1200000, oran: 0.27 },
-                { min: 1200000, max: 4300000, oran: 0.35 },
-                { min: 4300000, max: 999999999, oran: 0.40 }
-            ]
-        }
+        initialValues?.taxRates || ratesLastYear
     );
 
     const [exemptions, setExemptions] = useState(
