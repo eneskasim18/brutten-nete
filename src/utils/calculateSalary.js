@@ -80,6 +80,11 @@ export function calculateSalary({ year, grossSalaries, asgariUcret, customRates 
         let F;
         if (exemptions) {
             F = Math.max(0, Math.round((A * rates.damga - exemptions.damga[i]) * 100) / 100);
+        } else if (year >= 2022) {
+            // İstisna tablosu yoksa (örn: 2026), asgari ücret kadar istisna uygula
+            const asgariDamga = Math.round(asgariUcret * rates.damga * 100) / 100;
+            const computedDamga = Math.round(A * rates.damga * 100) / 100;
+            F = Math.max(0, computedDamga - asgariDamga);
         } else {
             F = Math.round(A * rates.damga * 100) / 100;
         }
