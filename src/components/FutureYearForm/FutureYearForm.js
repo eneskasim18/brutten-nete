@@ -14,19 +14,23 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
     // Son yılın verilerini al
     const ratesLastYear = TaxRates.getRates(lastYear);
 
-    // En yüksek yıl olan 2025'in ISTISNA değerlerini al
-    const latestYear = Math.max(...Object.keys(ISTISNA).map(Number));
-    const exemptions2025 = ISTISNA[latestYear];
+    // En yüksek yıl olan 2025'in ISTISNA değerlerini al ve %25.49 artır
+    const latestYearKey = Math.max(...Object.keys(ISTISNA).map(Number));
+    const exemptionsSource = ISTISNA[latestYearKey];
+
+    // %25.49 artış uygula
+    const increaseRate = 1.2549;
+    const exemptionsCalculated = {
+        gelir: exemptionsSource.gelir.map(v => Math.round(v * increaseRate * 100) / 100),
+        damga: exemptionsSource.damga.map(v => Math.round(v * increaseRate * 100) / 100)
+    };
 
     const [taxRates, setTaxRates] = useState(
         initialValues?.taxRates || ratesLastYear
     );
 
     const [exemptions, setExemptions] = useState(
-        initialValues?.exemptions || {
-            gelir: exemptions2025.gelir,
-            damga: exemptions2025.damga
-        }
+        initialValues?.exemptions || exemptionsCalculated
     );
 
     // Baz yıl seçildiğinde o yılın verilerini yükle
@@ -210,7 +214,7 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
                     </div>
 
                     <div className="form-section">
-                        <h3>{latestYear} Aylık Gelir Vergisi İstisnaları</h3>
+                        <h3>{lastYear} Aylık Gelir Vergisi İstisnaları</h3>
                         <div className="exemption-grid">
                             {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
                                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map((month, index) => (
@@ -228,7 +232,7 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
                     </div>
 
                     <div className="form-section">
-                        <h3>{latestYear} Aylık Damga Vergisi İstisnaları</h3>
+                        <h3>{lastYear} Aylık Damga Vergisi İstisnaları</h3>
                         <div className="exemption-grid">
                             {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
                                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map((month, index) => (
