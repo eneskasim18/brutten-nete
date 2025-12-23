@@ -4,13 +4,15 @@ import TaxRates from '../../utils/TaxRates';
 import { ISTISNA } from '../../utils/calculateSalary';
 
 const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = {} }) => {
-    // Eğer initialValues varsa onları kullan, yoksa default değerler
-    const [year, setYear] = useState(initialValues?.year || 2026);
+    const lastYear = TaxRates.getLastYear();
+
+    // Eğer initialValues varsa onları kullan, yoksa default değerler (son yıl üzerinden)
+    const [year, setYear] = useState(initialValues?.year || lastYear);
     const [inflation, setInflation] = useState(initialValues?.inflation || '');
     const [baseYear, setBaseYear] = useState(''); // Hangi yılı baz alacağız
 
-    // 2025 verilerini al
-    const rates2025 = TaxRates.getRates(2025);
+    // Son yılın verilerini al
+    const ratesLastYear = TaxRates.getRates(lastYear);
 
     // En yüksek yıl olan 2025'in ISTISNA değerlerini al
     const latestYear = Math.max(...Object.keys(ISTISNA).map(Number));
@@ -47,13 +49,13 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
             setTaxRates(baseData.taxRates);
             setExemptions(baseData.exemptions);
             setInflation(''); // Enflasyon alanını boş bırak, kullanıcı yeni değer girecek
-        } else if (selectedYear === '2025') {
-            // 2025 default değerlerini yükle
+        } else if (selectedYear === lastYear.toString()) {
+            // Default değerleri yükle
             setTaxRates({
                 sgk: 0.14,
                 issizlik: 0.01,
                 damga: 0.00759,
-                gelir: rates2025.gelir
+                gelir: ratesLastYear.gelir
             });
             setExemptions({
                 gelir: exemptions2025.gelir,
@@ -77,8 +79,8 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
                 baseRates = savedYears[baseYear].taxRates;
                 baseExemptions = savedYears[baseYear].exemptions;
             } else {
-                // Default 2025 değerleri
-                baseRates = rates2025;
+                // Default değerleri
+                baseRates = ratesLastYear;
                 baseExemptions = exemptions2025;
             }
 
@@ -163,7 +165,7 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
                                     value={baseYear}
                                     onChange={(e) => handleBaseYearChange(e.target.value)}
                                 >
-                                    <option value="">2025 (Varsayılan değerler)</option>
+                                    <option value="">{lastYear} (Varsayılan değerler)</option>
                                     {Object.keys(savedYears).sort().map(year => (
                                         <option key={year} value={year}>
                                             {year} ({savedYears[year].inflation ? `%${savedYears[year].inflation} enflasyon` : 'Özel değerler'})
@@ -186,7 +188,7 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
                                 step="0.1"
                             />
                         </label>
-                        <small>{baseYear ? `${baseYear} yılının değerlerini bu oranda arttırır` : '2025 değerlerini otomatik olarak bu oranda arttırır'}</small>
+                        <small>{baseYear ? `${baseYear} yılının değerlerini bu oranda arttırır` : `${lastYear} değerlerini otomatik olarak bu oranda arttırır`}</small>
                     </div>
 
                     <div className="form-section">

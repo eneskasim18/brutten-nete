@@ -119,11 +119,28 @@ class TaxRates {
                 { min: 1200000, max: 4300000, oran: 0.35 },
                 { min: 4300000, max: Infinity, oran: 0.40 }
             ]
+        },
+        2026: {
+            sgk: 0.14,
+            issizlik: 0.01,
+            damga: 0.00759,
+            gelir: [
+                { min: 0, max: 198274, oran: 0.15 },
+                { min: 198274, max: 414117, oran: 0.20 },
+                { min: 414117, max: 1505880, oran: 0.27 },
+                { min: 1505880, max: 5396070, oran: 0.35 },
+                { min: 5396070, max: 999999999999, oran: 0.40 }
+            ]
         }
     };
 
     static getRates(year) {
         return this.rates[year];
+    }
+
+    static getLastYear() {
+        const years = Object.keys(this.rates).map(Number);
+        return Math.max(...years);
     }
 }
 
