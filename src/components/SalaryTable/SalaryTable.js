@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './SalaryTable.css';
 import { calculateSalary } from '../../utils/calculateSalary';
+import TaxRates from '../../utils/TaxRates';
 import HamburgerMenu from '../HamburgerMenu/HamburgerMenu';
 import FutureYearForm from '../FutureYearForm/FutureYearForm';
 import * as XLSX from 'xlsx';
@@ -10,8 +11,8 @@ const months = [
     'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
 ];
 
-const DEFAULT_YEAR = 2025;
-const DEFAULT_ASGARI_UCRET = 26005.5;
+const DEFAULT_YEAR = TaxRates.getLastYear();
+const DEFAULT_ASGARI_UCRET = 33030;
 
 const SalaryTable = () => {
     const [grossSalaries, setGrossSalaries] = useState(Array(12).fill(''));
@@ -282,7 +283,7 @@ const SalaryTable = () => {
                             value={currentYear}
                             onChange={(e) => switchToYear(parseInt(e.target.value))}
                         >
-                            <option value={DEFAULT_YEAR}>2025 (Varsayılan)</option>
+                            <option value={DEFAULT_YEAR}>{DEFAULT_YEAR} (Varsayılan)</option>
                             {Object.keys(savedYears).sort().map(year => (
                                 <option key={year} value={year}>
                                     {year} (Özel)
@@ -298,7 +299,7 @@ const SalaryTable = () => {
 
                     {currentYear !== DEFAULT_YEAR && (
                         <button className="reset-btn" onClick={resetToDefault}>
-                            2025'e Dön
+                            {DEFAULT_YEAR}'e Dön
                         </button>
                     )}
                     {customRates && (
@@ -340,7 +341,7 @@ const SalaryTable = () => {
                                 <input
                                     className="salary-input"
                                     type="text"
-                                    placeholder="26.005,50"
+                                    placeholder="33.030,00"
                                     value={grossSalaries[idx]}
                                     onChange={e => handleGrossChange(idx, e.target.value)}
                                 />
