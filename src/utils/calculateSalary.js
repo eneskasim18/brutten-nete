@@ -30,73 +30,84 @@ export function calculateSalary({ year, grossSalaries, asgariUcret, customRates 
     let cumulativeMatrah = 0;
     const sgkTavan = getSgkTavan(year, asgariUcret);
 
-    for (let i = 0; i < grossSalaries.length; i++) {
-        // Parse input: remove dots (thousands separator), replace comma with dot (decimal)
-        const rawInput = grossSalaries[i]?.toString() || '0';
-        const cleanInput = rawInput.replace(/\./g, '').replace(',', '.');
-        const A = parseFloat(cleanInput) || 0;
+    // Yardımcı fonksiyon: Gelir vergisi hesapla
+    const calculateIncomeTax = (matrah, cumulativeMatrah, taxRates) => {
+        let tax = 0;
+        let kalanMatrah = matrah;
+        let kalanKumulatif = cumulativeMatrah;
+        const usedDilims = [];
 
-        // SGK ve işsizlik için tavan uygula
-        const sgkMatrah = Math.min(A, sgkTavan);
-        const B = Math.round(sgkMatrah * rates.sgk * 100) / 100;
-        const C = Math.round(sgkMatrah * rates.issizlik * 100) / 100;
-        const D = Math.round((A - (B + C)) * 100) / 100;
-
-        // İlgili yıl için devletin açıkladığı istisna tutarlarını kullan
-        let gelirVergisiMatrah = D; // İstisna matrahtan değil, vergiden düşülecek
-        let I = 0; // Asgari Geçim İndirimi (2022+ yok)
-
-        if (exemptions) {
-            // İstisna vergiden düşülecek, matrahtan değil
-        } else if (year >= 2022) {
-            // Eski mantık: asgari ücretin matrahı kadar istisna
-            const asgariMatrah = asgariUcret - (asgariUcret * (rates.sgk + rates.issizlik));
-            gelirVergisiMatrah = Math.max(0, D - asgariMatrah);
-        }
-
-        // Kümülatif matrah (önceki aylar dahil)
-        const G = cumulativeMatrah + D;
-
-        // Gelir vergisi hesaplama (kademeli)
-        let kalanMatrah = gelirVergisiMatrah;
-        let E = 0;
-        let kalanKumulatif = G - gelirVergisiMatrah;
-        let usedDilims = [];
-        for (const dilim of rates.gelir) {
+        for (const dilim of taxRates) {
             const dilimBas = Math.max(dilim.min, kalanKumulatif);
             const dilimSon = Math.min(dilim.max, kalanKumulatif + kalanMatrah);
+
             if (dilimSon > dilimBas) {
                 usedDilims.push(dilim);
                 const tutar = dilimSon - dilimBas;
-                E += tutar * dilim.oran;
+                tax += tutar * dilim.oran;
                 kalanMatrah -= tutar;
                 kalanKumulatif += tutar;
             }
             if (kalanMatrah <= 0) break;
         }
+        return { tax, usedDilims };
+    };
+
+    let cumulativeAsgariMatrah = 0;
+
+    for (let i = 0; i < grossSalaries.length; i++) {
+        // Parse input
+        const rawInput = grossSalaries[i]?.toString() || '0';
+        const cleanInput = rawInput.replace(/\./g, '').replace(',', '.');
+        const A = parseFloat(cleanInput) || 0;
+
+        // SGK ve işsizlik tavanı
+        const sgkMatrah = Math.min(A, sgkTavan);
+        const B = Math.round(sgkMatrah * rates.sgk * 100) / 100;
+        const C = Math.round(sgkMatrah * rates.issizlik * 100) / 100;
+        const D = Math.round((A - (B + C)) * 100) / 100; // Gelir Vergisi Matrahı
+
+        // Çalışanın Gelir Vergisi (İstisnasız)
+        const { tax: rawTax, usedDilims } = calculateIncomeTax(D, cumulativeMatrah, rates.gelir);
+
+        let istisnaGelir = 0;
+        let istisnaDamga = 0;
+
+        if (exemptions) {
+            istisnaGelir = exemptions.gelir[i];
+            istisnaDamga = exemptions.damga[i];
+        } else if (year >= 2022) {
+            // Dinamik İstisna Hesabı
+            const asgariBrut = asgariUcret;
+            const asgariSgkMatrah = asgariBrut; // Tavanı aşamaz
+            const asgariB = asgariSgkMatrah * rates.sgk;
+            const asgariC = asgariSgkMatrah * rates.issizlik;
+            const asgariMatrah = asgariBrut - (asgariB + asgariC);
+
+            // Asgari ücretin kümülatif vergisini hesapla
+            const { tax: asgariTax } = calculateIncomeTax(asgariMatrah, cumulativeAsgariMatrah, rates.gelir);
+            istisnaGelir = asgariTax;
+
+            cumulativeAsgariMatrah += asgariMatrah;
+
+            // Damga İstisnası
+            istisnaDamga = Math.round(asgariBrut * rates.damga * 100) / 100;
+        }
+
+        // Net Gelir Vergisi (Eksiye düşemez)
+        let E = Math.max(0, rawTax - istisnaGelir);
         E = Math.round(E * 100) / 100;
 
-        // Damga vergisi
-        let F;
-        if (exemptions) {
-            F = Math.max(0, Math.round((A * rates.damga - exemptions.damga[i]) * 100) / 100);
-        } else if (year >= 2022) {
-            // İstisna tablosu yoksa (örn: 2026), asgari ücret kadar istisna uygula
-            const asgariDamga = Math.round(asgariUcret * rates.damga * 100) / 100;
-            const computedDamga = Math.round(A * rates.damga * 100) / 100;
-            F = Math.max(0, computedDamga - asgariDamga);
-        } else {
-            F = Math.round(A * rates.damga * 100) / 100;
-        }
-
-        // İstisnalar hesaplanan vergi tutarından düşülmeli
-        if (exemptions) {
-            E = Math.max(0, E - exemptions.gelir[i]);
-        }
+        // Damga Vergisi
+        const totalDamga = Math.round(A * rates.damga * 100) / 100;
+        let F = Math.max(0, totalDamga - istisnaDamga);
+        // Yuvarlama farkları için son kontrol
+        F = Math.round(F * 100) / 100;
 
         // Net maaş
         const H = Math.round((A - (B + C + E + F)) * 100) / 100;
-        // Toplam ele geçen
+
+        let I = 0; // Agi yok
         let J = Math.round((H + I) * 100) / 100;
 
         // Asgari ücret desteği (sadece 33030 TL brüt için)
@@ -104,7 +115,10 @@ export function calculateSalary({ year, grossSalaries, asgariUcret, customRates 
             J += 1270;
         }
 
-        // Hangi dilim(ler)de?
+        // Kümülatif Güncelle
+        cumulativeMatrah += D;
+
+        // Dilim Stringi
         let dilimStr = '-';
         if (usedDilims.length > 0) {
             const minDilim = Math.min(...usedDilims.map(d => d.oran));
@@ -117,9 +131,8 @@ export function calculateSalary({ year, grossSalaries, asgariUcret, customRates 
         }
 
         results.push({
-            A, B, C, D, E, F, G, H, I, J, dilim: dilimStr
+            A, B, C, D, E, F, G: cumulativeMatrah, H, I, J, dilim: dilimStr
         });
-        cumulativeMatrah += D;
     }
     return results;
 } 
