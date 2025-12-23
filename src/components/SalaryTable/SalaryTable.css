@@ -2,10 +2,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
     background: #f7f7f7;
     position: relative;
+    width: 100%;
+    overflow-x: auto; /* Yatay kaydırma */
 }
 
 .salary-table {
@@ -14,12 +16,22 @@
     background: #fff;
     box-shadow: 0 6px 32px rgba(0, 0, 0, 0.16);
     border-radius: 10px;
-    overflow: hidden;
     margin-bottom: 16px;
-    min-width: 1150px;
-    transform: scale(0.85);
-    transform-origin: top center;
+    min-width: 1150px; /* Genişlik sabit kalsın ki mobilde kaydırılsın */
     margin-top: 15px;
+}
+
+@media (max-width: 1200px) {
+    .salary-table-wrapper {
+        align-items: flex-start; /* Mobilde sola yasla ki kaydırma düzgün çalışsın */
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .salary-table {
+        transform: none; /* Scale'i kaldır */
+        margin-left: 0;
+    }
 }
 
 .salary-table th,
