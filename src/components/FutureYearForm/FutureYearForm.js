@@ -51,8 +51,8 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
                 gelir: ratesLastYear.gelir
             });
             setExemptions({
-                gelir: exemptions2025.gelir,
-                damga: exemptions2025.damga
+                gelir: exemptionsCalculated.gelir,
+                damga: exemptionsCalculated.damga
             });
             setInflation('');
         }
@@ -74,7 +74,7 @@ const FutureYearForm = ({ onSubmit, onClose, initialValues = null, savedYears = 
             } else {
                 // Default değerleri
                 baseRates = ratesLastYear;
-                baseExemptions = exemptions2025;
+                baseExemptions = exemptionsCalculated;
             }
 
             // Vergi dilimlerini enflasyon oranına göre güncelle
